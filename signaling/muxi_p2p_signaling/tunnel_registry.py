@@ -22,10 +22,59 @@ import secrets
 import time
 from dataclasses import dataclass, field
 from threading import Lock
+from typing import Awaitable, Callable
 
 from fastapi import APIRouter, Header, HTTPException, Request
 
 router = APIRouter(prefix="/api/v1/tunnel", tags=["tunnel"])
+
+#: 嵌入方（例如 agent-nexus 网关）的钩子，见 configure()。默认全为 None：独立部署时
+#: 行为与拆分前一致——一把共享密钥、client-token 公开领取、诊断口打开。
+SecretProvider = Callable[[str], "str | None"]
+AccessGuard = Callable[[Request, str], Awaitable[None]]
+_secret_provider: SecretProvider | None = None
+_access_guard: AccessGuard | None = None
+_diagnostics = True
+
+
+def configure(
+    *,
+    secret_provider: SecretProvider | None = None,
+    access_guard: AccessGuard | None = None,
+    diagnostics: bool = True,
+    relay_host: str | None = None,
+    relay_port: int | None = None,
+) -> None:
+    """嵌入时调用一次。
+
+    secret_provider(server_id) 返回那台 agent 自己的隧道 token（不是派生后的密钥），
+    返回空表示不认识这个 server_id。设了它，每台 agent 一把钥匙，谁也签不了别人的
+    /register，派生给客户端的 token 也只对那一台有效。
+
+    access_guard(request, server_id) 在 /endpoints、/client-token、/punch 前调用，
+    不放行就抛 HTTPException。独立部署时这几个口是公开的（MC 服本来就公开可进），
+    嵌进网关做远程桌面时必须只给已登录的人。
+
+    diagnostics=False 关掉不鉴权的 /diag 上传和读取。
+    """
+    global _secret_provider, _access_guard, _diagnostics, RELAY_FALLBACK_HOST, RELAY_FALLBACK_PORT
+    _secret_provider = secret_provider
+    _access_guard = access_guard
+    _diagnostics = diagnostics
+    if relay_host is not None:
+        RELAY_FALLBACK_HOST = relay_host
+    if relay_port is not None:
+        RELAY_FALLBACK_PORT = relay_port
+
+
+async def _guard(request: Request, server_id: str) -> None:
+    if _access_guard is not None:
+        await _access_guard(request, server_id)
+
+
+def _require_diagnostics() -> None:
+    if not _diagnostics:
+        raise HTTPException(status_code=404, detail="诊断上报未开启")
 
 #: 超过这个时间没再上报就认为那台机器掉线了，不再发给客户端。
 REGISTRATION_TTL = 90.0
@@ -84,7 +133,17 @@ def _is_poison(address: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
 TOKEN_FILE = os.getenv("BMC_TUNNEL_TOKEN_FILE", "/app/server/data/tunnel-token")
 
 
-def _secret() -> bytes:
+def derive_secret(token: str) -> bytes:
+    """和 C# 侧 TunnelProtocol.DeriveSecret 必须完全一致。"""
+    return hashlib.sha256(("muxi-tunnel-v1:" + token).encode("utf-8")).digest()
+
+
+def _secret(server_id: str = "default") -> bytes:
+    if _secret_provider is not None:
+        token = (_secret_provider(server_id) or "").strip()
+        if not token:
+            raise HTTPException(status_code=401, detail="未知的 server_id")
+        return derive_secret(token)
     token = ""
     try:
         with open(TOKEN_FILE, encoding="utf-8") as handle:
@@ -98,8 +157,7 @@ def _secret() -> bytes:
             status_code=503,
             detail=f"服务端未配置隧道密钥：写入 {TOKEN_FILE} 或设置 MUXI_TUNNEL_TOKEN",
         )
-    # 和 C# 侧 TunnelProtocol.DeriveSecret 必须完全一致
-    return hashlib.sha256(("muxi-tunnel-v1:" + token).encode("utf-8")).digest()
+    return derive_secret(token)
 
 
 @dataclass
@@ -184,7 +242,8 @@ def client_ip(request: Request) -> str:
     return request.client.host if request.client else "0.0.0.0"
 
 
-def _verify(signature: str | None, timestamp: str | None, body: bytes) -> None:
+def _verify(signature: str | None, timestamp: str | None, body: bytes,
+            server_id: str = "default") -> None:
     if not signature or not timestamp:
         raise HTTPException(status_code=401, detail="缺少签名")
     try:
@@ -193,7 +252,8 @@ def _verify(signature: str | None, timestamp: str | None, body: bytes) -> None:
         raise HTTPException(status_code=401, detail="时间戳非法") from error
     if abs(time.time() - sent) > CLOCK_SKEW:
         raise HTTPException(status_code=401, detail="时间戳超出允许范围")
-    expected = hmac.new(_secret(), timestamp.encode("ascii") + body, hashlib.sha256).hexdigest()
+    expected = hmac.new(_secret(server_id), timestamp.encode("ascii") + body,
+                        hashlib.sha256).hexdigest()
     if not hmac.compare_digest(expected, signature):
         raise HTTPException(status_code=401, detail="签名不匹配")
 
@@ -202,7 +262,7 @@ def _verify(signature: str | None, timestamp: str | None, body: bytes) -> None:
 CLIENT_TOKEN_PERIOD = 86400.0
 
 
-def client_token(now: float | None = None, offset: int = 0) -> str:
+def client_token(now: float | None = None, offset: int = 0, server_id: str = "default") -> str:
     """按周期从 master 派生出给客户端的 token。
 
     客户端和服务端侧 agent 不能共用一个密钥：master 同时是 agent 调 /register
@@ -210,7 +270,7 @@ def client_token(now: float | None = None, offset: int = 0) -> str:
     连那台机器上的 Minecraft——本来就是公开可进的——签不出 /register 的名。
     """
     bucket = int((now if now is not None else time.time()) // CLIENT_TOKEN_PERIOD) + offset
-    return hmac.new(_secret(), f"muxi-client-v1|{bucket}".encode("ascii"),
+    return hmac.new(_secret(server_id), f"muxi-client-v1|{bucket}".encode("ascii"),
                     hashlib.sha256).hexdigest()
 
 
@@ -378,15 +438,21 @@ async def register(
 ):
     """服务端侧工具定期调用，上报自己当前可被连到的地址。"""
     body = await request.body()
-    _verify(x_muxi_signature, x_muxi_timestamp, body)
+    if _secret_provider is None:
+        _verify(x_muxi_signature, x_muxi_timestamp, body)
 
     import json
     try:
         payload = json.loads(body)
     except json.JSONDecodeError as error:
         raise HTTPException(status_code=400, detail="请求体不是合法 JSON") from error
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="请求体不是合法 JSON")
 
     server_id = str(payload.get("serverId") or "default")
+    if _secret_provider is not None:
+        # 每台一把钥匙：先知道是谁，才知道用哪把验签。
+        _verify(x_muxi_signature, x_muxi_timestamp, body, server_id)
     tunnel_port = int(payload.get("tunnelPort") or 25540)
     endpoints = [str(x) for x in (payload.get("endpoints") or [])]
     udp_candidates = [str(x).strip() for x in (payload.get("udpCandidates") or []) if str(x).strip()][:16]
@@ -460,6 +526,7 @@ def _punch_payload(p: "PunchRequest", now: float) -> dict:
 @router.get("/endpoints")
 async def endpoints(request: Request, server_id: str = "default"):
     """客户端启动时调用，拿当前可用的入口列表。"""
+    await _guard(request, server_id)
     with _lock:
         registration = _registrations.get(server_id)
         fresh = registration if registration and registration.alive else None
@@ -514,6 +581,7 @@ async def upload_diag(request: Request, label: str = ""):
     不鉴权：内容是玩家自己机器的网络诊断，本来就要交给我们；id 是随机的，
     没有 id 读不到别人的。存内存、只留最近几十条，重启即丢。
     """
+    _require_diagnostics()
     body = (await request.body())[:DIAG_MAX_BYTES]
     text = body.decode("utf-8", "replace")
     token = secrets.token_urlsafe(9)
@@ -527,6 +595,7 @@ async def upload_diag(request: Request, label: str = ""):
 
 @router.get("/diag/{token}")
 async def read_diag(token: str):
+    _require_diagnostics()
     with _lock:
         item = _diags.get(token)
     if item is None:
@@ -537,6 +606,7 @@ async def read_diag(token: str):
 
 @router.get("/diag")
 async def list_diag():
+    _require_diagnostics()
     with _lock:
         rows = sorted(_diags.items(), key=lambda kv: kv[1][0], reverse=True)
     return {"items": [
@@ -546,13 +616,15 @@ async def list_diag():
 
 
 @router.get("/client-token")
-async def issue_client_token(server_id: str = "default"):
-    """客户端启动时来取。不鉴权：它换来的能力和直接连公网 Minecraft 等价。"""
+async def issue_client_token(request: Request, server_id: str = "default"):
+    """客户端启动时来取。独立部署不鉴权：它换来的能力和直接连公网 Minecraft 等价。
+    嵌入方用 access_guard 收紧。"""
+    await _guard(request, server_id)
     now = time.time()
     period = CLIENT_TOKEN_PERIOD
     return {
         "serverId": server_id,
-        "token": client_token(now),
+        "token": client_token(now, server_id=server_id),
         "expiresAt": round((int(now // period) + 1) * period, 3),
     }
 
@@ -675,7 +747,7 @@ async def punch_pending(
     register 是 30 秒一次，对打洞来说太慢——客户端点开始游戏之后等不了那么久。
     这个口足够轻（空响应几十字节），可以每秒问一次。取走即清除，避免重复打洞。
     """
-    _verify(x_muxi_signature, x_muxi_timestamp, await request.body())
+    _verify(x_muxi_signature, x_muxi_timestamp, await request.body(), server_id)
 
     # 长轮询（wait > 0）：没有请求就挂着，/punch 一入队就唤醒。旧 agent 不带 wait，照旧
     # 立即返回。先 clear 再取：两步之间没有 await，/punch 的 set 不可能落在中间被吞掉。
@@ -713,6 +785,7 @@ async def punch(request: Request, server_id: str = "default"):
     单边发起的话，先到的那个包在对方 NAT 上没有对应映射，会被当成未知连接丢掉。
     所以两边都要在约定时刻朝对方猛发一阵，谁的包后到谁就能进去。
     """
+    await _guard(request, server_id)
     import json
     try:
         payload = json.loads(await request.body() or b"{}")

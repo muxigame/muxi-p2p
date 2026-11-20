@@ -14,7 +14,8 @@
   "changes": [
     "client/protocol/Manifest.cs: only RouteKind and RouteCandidate are kept (src/MuxiP2P.Protocol/Routes.cs).",
     "New cross-platform project files (net9.0); the agent publishes for win-x64 and linux-x64.",
-    "Deployment-specific addresses removed: the agent has no default reflector (--reflector / MUXI_REFLECTOR), the signaling relay host has no default (BMC_TUNNEL_RELAY_HOST), and addresses in comments and tests are documentation or public example addresses."
+    "Deployment-specific addresses removed: the agent has no default reflector (--reflector / MUXI_REFLECTOR), the signaling relay host has no default (BMC_TUNNEL_RELAY_HOST), and addresses in comments and tests are documentation or public example addresses.",
+    "signaling/app is the installable package muxi_p2p_signaling (signaling/pyproject.toml); configure() adds per-agent secrets, an access guard and a diagnostics switch for embedding; reflector.py is a new MUXI-REFLECT/1 server (it had no source in either repository)."
   ],
   "files": [
     {
@@ -170,19 +171,19 @@
     {
       "repository": "muxi-mc-signaling",
       "source": "app/__init__.py",
-      "path": "signaling/app/__init__.py",
+      "path": "signaling/muxi_p2p_signaling/__init__.py",
       "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "repository": "muxi-mc-signaling",
       "source": "app/main.py",
-      "path": "signaling/app/main.py",
+      "path": "signaling/muxi_p2p_signaling/main.py",
       "source_sha256": "11ca3b468d8079a075143cef65865e6f8161077cadf235fcbf71220f863c1782"
     },
     {
       "repository": "muxi-mc-signaling",
       "source": "app/tunnel_registry.py",
-      "path": "signaling/app/tunnel_registry.py",
+      "path": "signaling/muxi_p2p_signaling/tunnel_registry.py",
       "source_sha256": "bcdf9d54c116636a10d17016dbc9a508323a0a478d06420b9c716154b92ae7a1"
     },
     {

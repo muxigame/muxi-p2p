@@ -11,7 +11,7 @@ from unittest.mock import patch
 import httpx
 from fastapi import FastAPI
 
-from app import tunnel_registry as registry
+from muxi_p2p_signaling import tunnel_registry as registry
 
 TOKEN = "selftest-tunnel-token"
 
