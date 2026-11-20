@@ -15,157 +15,158 @@
     "client/protocol/Manifest.cs: only RouteKind and RouteCandidate are kept (src/MuxiP2P.Protocol/Routes.cs).",
     "New cross-platform project files (net9.0); the agent publishes for win-x64 and linux-x64.",
     "Deployment-specific addresses removed: the agent has no default reflector (--reflector / MUXI_REFLECTOR), the signaling relay host has no default (BMC_TUNNEL_RELAY_HOST), and addresses in comments and tests are documentation or public example addresses.",
-    "signaling/app is the installable package muxi_p2p_signaling (signaling/pyproject.toml); configure() adds per-agent secrets, an access guard and a diagnostics switch for embedding; reflector.py is a new MUXI-REFLECT/1 server (it had no source in either repository)."
+    "signaling/app is the installable package muxi_p2p_signaling (signaling/pyproject.toml); configure() adds per-agent secrets, an access guard and a diagnostics switch for embedding; reflector.py is a new MUXI-REFLECT/1 server (it had no source in either repository).",
+    "Split into muxi-p2p-agent (mounted at agent/) and muxi-p2p-signaling (mounted at signaling/); this repository is the umbrella. P2PTunnel.DisposeInBackground is public so consumers outside the assembly can use it."
   ],
   "files": [
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/Cancellation.cs",
-      "path": "src/MuxiP2P.Protocol/Cancellation.cs",
+      "path": "agent/src/MuxiP2P.Protocol/Cancellation.cs",
       "source_sha256": "363e415e238896d8297d5ffb497f16a33f7d416b1918614cbd54076323f6f3a9"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/HoleLoadTest.cs",
-      "path": "src/MuxiP2P.Protocol/HoleLoadTest.cs",
+      "path": "agent/src/MuxiP2P.Protocol/HoleLoadTest.cs",
       "source_sha256": "58b3f3fcc4c1b65821df5eb8f6d29cd3ea8f8e873b4a924966757ae10759cf1f"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/IMuxiTunnel.cs",
-      "path": "src/MuxiP2P.Protocol/IMuxiTunnel.cs",
+      "path": "agent/src/MuxiP2P.Protocol/IMuxiTunnel.cs",
       "source_sha256": "e697b64e95c9bdfb5fcbe82131478bcbd62b64a720522519c2eb7c9226356369"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/MsQuicMtu.cs",
-      "path": "src/MuxiP2P.Protocol/MsQuicMtu.cs",
+      "path": "agent/src/MuxiP2P.Protocol/MsQuicMtu.cs",
       "source_sha256": "9084035401f0767b55baeb649e5564fde671147cc97e6e2c8da78f3f0a8b6020"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/MuxConnection.cs",
-      "path": "src/MuxiP2P.Protocol/MuxConnection.cs",
+      "path": "agent/src/MuxiP2P.Protocol/MuxConnection.cs",
       "source_sha256": "c8a9d2c73349c99374d265f4351693c293041049025f4aa77f337c2c2f3f7e9f"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/MuxTunnel.cs",
-      "path": "src/MuxiP2P.Protocol/MuxTunnel.cs",
+      "path": "agent/src/MuxiP2P.Protocol/MuxTunnel.cs",
       "source_sha256": "fe5237310fab2274dde54a0c0bbafe241c38413659e1963b1c621223eb373a23"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/NatDiscovery.cs",
-      "path": "src/MuxiP2P.Protocol/NatDiscovery.cs",
+      "path": "agent/src/MuxiP2P.Protocol/NatDiscovery.cs",
       "source_sha256": "cde53d303d024a4e5712a8e778d1e28b89f7495a94bb83d3bd05292700708b7c"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/P2PTags.cs",
-      "path": "src/MuxiP2P.Protocol/P2PTags.cs",
+      "path": "agent/src/MuxiP2P.Protocol/P2PTags.cs",
       "source_sha256": "25afead246bdd059bc6326c66b1fafba61a8c2bfed1b2640c970d5ed55fcb28b"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/PortMapper.cs",
-      "path": "src/MuxiP2P.Protocol/PortMapper.cs",
+      "path": "agent/src/MuxiP2P.Protocol/PortMapper.cs",
       "source_sha256": "bb22a5b2941f79d617d59ee3c3df98c7ca515867e7f3e26d2edc87004ce2ae0b"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/PunchProtocol.cs",
-      "path": "src/MuxiP2P.Protocol/PunchProtocol.cs",
+      "path": "agent/src/MuxiP2P.Protocol/PunchProtocol.cs",
       "source_sha256": "741f0fdcd2c663817ed74ad4ac8a06dcc9c2ccea9c7db60d8cda18ab3ce116cf"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/QuicTunnel.cs",
-      "path": "src/MuxiP2P.Protocol/QuicTunnel.cs",
+      "path": "agent/src/MuxiP2P.Protocol/QuicTunnel.cs",
       "source_sha256": "6541629cab318390b69747f5f9b899f739a7a7b00c56998dc82fbf948a5ef15c"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/Manifest.cs",
-      "path": "src/MuxiP2P.Protocol/Routes.cs",
+      "path": "agent/src/MuxiP2P.Protocol/Routes.cs",
       "source_sha256": "a363eb0c923f3bd679d3b7bea3f6b49e73b61a69d8da8c9d107c9f824bbe6579"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/StreamBridge.cs",
-      "path": "src/MuxiP2P.Protocol/StreamBridge.cs",
+      "path": "agent/src/MuxiP2P.Protocol/StreamBridge.cs",
       "source_sha256": "c898246ff96eab376a08f88c40d62c9b72615e8fdf56096ce0aa209703cb9fef"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/TcpPuncher.cs",
-      "path": "src/MuxiP2P.Protocol/TcpPuncher.cs",
+      "path": "agent/src/MuxiP2P.Protocol/TcpPuncher.cs",
       "source_sha256": "74ae0ba49ccd46efa4d4791ef20e332c1253fed583f937806c5dc7725171c3fd"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/TunnelProtocol.cs",
-      "path": "src/MuxiP2P.Protocol/TunnelProtocol.cs",
+      "path": "agent/src/MuxiP2P.Protocol/TunnelProtocol.cs",
       "source_sha256": "4ebc790ffb67d9d32e17722c6e7274c8161e0522a030c64093cb7392ee5d856f"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/protocol/UdpPuncher.cs",
-      "path": "src/MuxiP2P.Protocol/UdpPuncher.cs",
+      "path": "agent/src/MuxiP2P.Protocol/UdpPuncher.cs",
       "source_sha256": "b05c2d3e2c28d00dfb4b516b0fb6861adde109c56639b95e4cbc068394279ffc"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/core/ControlPlaneClient.cs",
-      "path": "src/MuxiP2P.Client/ControlPlaneClient.cs",
+      "path": "agent/src/MuxiP2P.Client/ControlPlaneClient.cs",
       "source_sha256": "e0273070c1a46314131a09db0efd6ff90edcc296e5661b6617daf237187c5a01"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/core/Log.cs",
-      "path": "src/MuxiP2P.Client/Log.cs",
+      "path": "agent/src/MuxiP2P.Client/Log.cs",
       "source_sha256": "640fd8a22fa37bd0d764678c2839a401070c839f0ea656e55a20fc53296e5a45"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/core/P2PTunnel.cs",
-      "path": "src/MuxiP2P.Client/P2PTunnel.cs",
+      "path": "agent/src/MuxiP2P.Client/P2PTunnel.cs",
       "source_sha256": "f974b97a4da2d4355d7ed2168c61310702485fa50b8e53da6a9cbfd621fd9d54"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/core/PhaseTimer.cs",
-      "path": "src/MuxiP2P.Client/PhaseTimer.cs",
+      "path": "agent/src/MuxiP2P.Client/PhaseTimer.cs",
       "source_sha256": "ebc1a1fd2971ed6327113d13bb371e0681953585bf19bdb7f9d36af23ecb8394"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/core/TunnelClient.cs",
-      "path": "src/MuxiP2P.Client/TunnelClient.cs",
+      "path": "agent/src/MuxiP2P.Client/TunnelClient.cs",
       "source_sha256": "1c72fb989542eccd9d9b1cbdd3eff9382ec62582fa172d0bae2bef8424d0e1dc"
     },
     {
       "repository": "better-mc-remake",
       "source": "client/core/TunnelProbe.cs",
-      "path": "src/MuxiP2P.Client/TunnelProbe.cs",
+      "path": "agent/src/MuxiP2P.Client/TunnelProbe.cs",
       "source_sha256": "0ef690225b8e09a2e394bb9da521695618ad783bf96c8e43b06bf3097f7c80bc"
     },
     {
       "repository": "better-mc-remake",
       "source": "tunnel/server/ControlPlane.cs",
-      "path": "src/MuxiP2P.Agent/ControlPlane.cs",
+      "path": "agent/src/MuxiP2P.Agent/ControlPlane.cs",
       "source_sha256": "8bcb5e4314189925a1d7b925b9a5ed72d91b4f21071f1d2bbce180e0d4c78f2b"
     },
     {
       "repository": "better-mc-remake",
       "source": "tunnel/server/Program.cs",
-      "path": "src/MuxiP2P.Agent/Program.cs",
+      "path": "agent/src/MuxiP2P.Agent/Program.cs",
       "source_sha256": "f4d88c684a17775df9882f367a24b33ff6b55583fd5243557e3ddeb2e0cba0ab"
     },
     {
       "repository": "better-mc-remake",
       "source": "tunnel/server/PunchService.cs",
-      "path": "src/MuxiP2P.Agent/PunchService.cs",
+      "path": "agent/src/MuxiP2P.Agent/PunchService.cs",
       "source_sha256": "e30aca6b89ee972443cb54251affd43daeef7813a9ffbeb6b3cf3570a86d329a"
     },
     {

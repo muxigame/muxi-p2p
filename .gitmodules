@@ -1,0 +1,6 @@
+[submodule "agent"]
+	path = agent
+	url = https://github.com/muxigame/muxi-p2p-agent.git
+[submodule "signaling"]
+	path = signaling
+	url = https://github.com/muxigame/muxi-p2p-signaling.git

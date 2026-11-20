@@ -1,5 +1,7 @@
 name: ci
 
+# The umbrella builds the pinned agent and signaling commits together, so a bump of either
+# submodule is checked against the other.
 on:
   push:
   pull_request:
@@ -8,37 +10,30 @@ permissions:
   contents: read
 
 jobs:
-  dotnet:
+  agent:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            rid: linux-x64
-          - os: windows-latest
-            rid: win-x64
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "9.0.x"
-      - name: Build every project
-        shell: bash
+      - shell: bash
         run: |
           set -eu
-          for project in src/*/*.csproj; do dotnet build "$project" -c Release; done
-      - name: Publish the agent
-        run: dotnet publish src/MuxiP2P.Agent/MuxiP2P.Agent.csproj -c Release -r ${{ matrix.rid }} -o out/${{ matrix.rid }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: muxi-p2p-agent-${{ matrix.rid }}
-          path: out/${{ matrix.rid }}/muxi-p2p-agent*
+          for project in agent/src/*/*.csproj; do dotnet build "$project" -c Release; done
 
   signaling:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -47,4 +42,3 @@ jobs:
           pip install -r requirements-dev.txt
           pip install --no-deps .
           python -B -m unittest discover -s tests -v
-          python -c "import muxi_p2p_signaling, muxi_p2p_signaling.reflector" 
